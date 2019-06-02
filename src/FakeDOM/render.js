@@ -1,37 +1,98 @@
 import { TEXT_ELEMENT } from "./utils";
 
-function render(nodeFAKE, parentDOM) {
-  const { tagName, props } = nodeFAKE;
+let rootInstance = null;
 
-  // Create DOM element
+function render(element, container) {
+  const prevInstance = rootInstance;
+  const nextInstance = reconcile(container, prevInstance, element);
+  rootInstance = nextInstance;
+}
+
+function reconcile(parentDom, instance, element) {
+  if (instance == null) {
+    // create instance
+    const newInstance = instantiate(element);
+    parentDom.appendChild(newInstance.dom);
+    return newInstance;
+  }
+  if (element == null) {
+    // remove instance
+    parentDom.removeChild(instance.dom);
+    return null;
+  }
+  if (instance.element.tagName === element.tagName) {
+    // update instance
+    updateDomProperties(instance.dom, instance.element.props, element.props);
+    instance.childrenInstances = reconcileChildren(instance, element);
+    instance.element = element;
+    return instance;
+  }
+  // replace instance
+  const newInstance = instantiate(element);
+  parentDom.replaceChild(newInstance.dom, instance.dom);
+  return newInstance;
+}
+
+function reconcileChildren(instance, element) {
+  const { dom, childrenInstances } = instance;
+  const nextChildrenElements = element.props.children || [];
+  const newChildrenInstances = [];
+
+  const count = Math.max(childrenInstances.length, nextChildrenElements.length);
+  for (let i = 0; i < count; i++) {
+    const childInstance = childrenInstances[i];
+    const nextChildElement = nextChildrenElements[i];
+    const newChildInstance = reconcile(dom, childInstance, nextChildElement);
+    newChildrenInstances.push(newChildInstance);
+  }
+
+  return newChildrenInstances.filter(childInstance => childInstance != null);
+}
+
+function instantiate(element) {
+  const { tagName, props } = element;
+
   const isTextElement = tagName === TEXT_ELEMENT;
-  const nodeDOM = isTextElement
+  const dom = isTextElement
     ? document.createTextNode("")
     : document.createElement(tagName);
 
-  // Add event listeners
-  const isListener = name => name.startsWith("on");
-  Object.keys(props)
-    .filter(isListener)
-    .forEach(name => {
-      const eventType = name.toLowerCase().substring(2);
-      nodeDOM.addEventListener(eventType, props[name]);
-    });
+  updateDomProperties(dom, [], props);
 
-  // Set properties
-  const isAttribute = name => !isListener(name) && name !== "children";
-  Object.keys(props)
-    .filter(isAttribute)
-    .forEach(name => {
-      nodeDOM[name] = props[name];
-    });
+  const childrenElements = props.children || [];
+  const childrenInstances = childrenElements.map(instantiate);
+  const childrenDoms = childrenInstances.map(
+    childInstance => childInstance.dom
+  );
+  childrenDoms.forEach(childDom => dom.appendChild(childDom));
 
-  // Render children
-  const childElements = props.children || [];
-  childElements.forEach(childElement => render(childElement, nodeDOM));
+  const instance = { element, dom, childrenInstances };
+  return instance;
+}
 
-  // Append to parent
-  parentDOM.appendChild(nodeDOM);
+function updateDomProperties(dom, prevProps, nextProps) {
+  const isEvent = name => name.startsWith("on");
+  const isAttribute = name => !isEvent(name) && name !== "children";
+
+  // remove events and attributes
+  const prevPropsKeys = Object.keys(prevProps);
+  prevPropsKeys.filter(isEvent).forEach(event => {
+    const eventName = event.toLowerCase().substring(2);
+    dom.removeEventListener(eventName, prevProps[event]);
+  });
+  prevPropsKeys.filter(isAttribute).forEach(attribute => {
+    dom[attribute] = null;
+  });
+
+  // add events and attributes
+  const nextPropsKeys = Object.keys(nextProps);
+  nextPropsKeys.filter(isEvent).forEach(event => {
+    const eventName = event.toLowerCase().substring(2);
+    dom.addEventListener(eventName, nextProps[event]);
+  });
+  nextPropsKeys.filter(isAttribute).forEach(attribute => {
+    dom[attribute] = nextProps[attribute];
+  });
 }
 
 export default render;

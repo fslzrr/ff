@@ -1,29 +1,55 @@
 import FakeDOM from "./FakeDOM";
 
-function Story({ name, url }) {
-  const likes = Math.ceil(Math.random() * 1000);
-  return (
-    <li>
-      <button>{likes} ❤️</button>
-      <a href={url}>{name}</a>
-    </li>
-  );
+function randomNumber() {
+  return Math.ceil(Math.random() * 1000);
 }
 
 const stories = [
-  { name: "Didact introduction", url: "http://bit.ly/2pX7HNn" },
-  { name: "Rendering DOM elements ", url: "http://bit.ly/2qCOejH" },
-  { name: "Element creation and JSX", url: "http://bit.ly/2qGbw8S" },
-  { name: "Instances and reconciliation", url: "http://bit.ly/2q4A746" },
-  { name: "Components and state", url: "http://bit.ly/2rE16nh" }
+  {
+    name: "Didact introduction",
+    url: "http://bit.ly/2pX7HNn",
+    likes: randomNumber()
+  },
+  {
+    name: "Rendering DOM elements ",
+    url: "http://bit.ly/2qCOejH",
+    likes: randomNumber()
+  },
+  {
+    name: "Element creation and JSX",
+    url: "http://bit.ly/2qGbw8S",
+    likes: randomNumber()
+  },
+  {
+    name: "Instances and reconciliation",
+    url: "http://bit.ly/2q4A746",
+    likes: randomNumber()
+  },
+  {
+    name: "Components and state",
+    url: "http://bit.ly/2rE16nh",
+    likes: randomNumber()
+  }
 ];
 
-const appElement = (
+const appElement = () => (
   <div>
     <ul>{stories.map(s => Story(s))}</ul>
   </div>
 );
 
-console.log(appElement);
+function Story(story) {
+  return (
+    <li>
+      <button onClick={e => handleLike(story)}>{story.likes} ❤️</button>
+      <a href={story.url}>{story.name}</a>
+    </li>
+  );
+}
 
-FakeDOM.render(appElement, document.getElementById("app"));
+function handleLike(story) {
+  story.likes += 1;
+  FakeDOM.render(appElement(), document.getElementById("app"));
+}
+
+FakeDOM.render(appElement(), document.getElementById("app"));
