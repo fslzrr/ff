@@ -32,24 +32,46 @@ const stories = [
   }
 ];
 
-const appElement = () => (
-  <div>
-    <ul>{stories.map(s => Story(s))}</ul>
-  </div>
-);
+class Story extends FakeDOM.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      likes: randomNumber()
+    };
+  }
 
-function Story(story) {
-  return (
-    <li>
-      <button onClick={e => handleLike(story)}>{story.likes} ❤️</button>
-      <a href={story.url}>{story.name}</a>
-    </li>
-  );
+  like() {
+    this.setState({ likes: this.state.likes + 1 });
+  }
+
+  render() {
+    const { name, url } = this.props;
+    const { likes } = this.state;
+    return (
+      <li>
+        <button onClick={() => this.like()}>
+          {likes}
+          <b>❤️</b>
+        </button>
+        <a href={url}>{name}</a>
+      </li>
+    );
+  }
 }
 
-function handleLike(story) {
-  story.likes += 1;
-  FakeDOM.render(appElement(), document.getElementById("app"));
+class App extends FakeDOM.Component {
+  render() {
+    return (
+      <div>
+        <h1>Stories</h1>
+        <ul>
+          {this.props.stories.map(story => (
+            <Story name={story.name} url={story.url} />
+          ))}
+        </ul>
+      </div>
+    );
+  }
 }
 
-FakeDOM.render(appElement(), document.getElementById("app"));
+FakeDOM.render(<App stories={stories} />, document.getElementById("app"));
