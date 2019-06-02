@@ -1,22 +1,37 @@
-const renderElement = vNode => {
-  const { tag, props, childs } = vNode;
-  const ffElement = document.createElement(tag);
+import { TEXT_ELEMENT } from "./utils";
 
-  for (const [key, value] of Object.entries(props)) {
-    ffElement.setAttribute(key, value);
-  }
+function render(nodeFAKE, parentDOM) {
+  const { tagName, props } = nodeFAKE;
 
-  for (const child of childs) {
-    const ffChild = render(child);
-    ffElement.appendChild(ffChild);
-  }
+  // Create DOM element
+  const isTextElement = tagName === TEXT_ELEMENT;
+  const nodeDOM = isTextElement
+    ? document.createTextNode("")
+    : document.createElement(tagName);
 
-  return ffElement;
-};
+  // Add event listeners
+  const isListener = name => name.startsWith("on");
+  Object.keys(props)
+    .filter(isListener)
+    .forEach(name => {
+      const eventType = name.toLowerCase().substring(2);
+      nodeDOM.addEventListener(eventType, props[name]);
+    });
 
-const render = vNode => {
-  if (typeof vNode === "string") return document.createTextNode(vNode);
-  return renderElement(vNode);
-};
+  // Set properties
+  const isAttribute = name => !isListener(name) && name !== "children";
+  Object.keys(props)
+    .filter(isAttribute)
+    .forEach(name => {
+      nodeDOM[name] = props[name];
+    });
+
+  // Render children
+  const childElements = props.children || [];
+  childElements.forEach(childElement => render(childElement, nodeDOM));
+
+  // Append to parent
+  parentDOM.appendChild(nodeDOM);
+}
 
 export default render;
